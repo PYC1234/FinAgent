@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s --connect-timeout 8 \"https://api.binance.com/api/v3/ping\")",
+      "Bash(curl -s --connect-timeout 8 \"https://api.twelvedata.com/v1/quote/simple/SPY?apikey=ec184bc37c55438fa20b6702e22d732a\")",
+      "Bash(curl -s --connect-timeout 8 -o /dev/null -w \"%{http_code}\" \"https://api.frankfurter.app/\")"
+    ]
+  }
+}

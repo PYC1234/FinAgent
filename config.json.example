@@ -1,0 +1,9 @@
+{
+  "llm_provider": "zhipu",
+  "llm": {
+    "api_key": "你的API Key",
+    "base_url": "https://open.bigmodel.cn/api/paas/v4",
+    "model": "glm-4.7-flash",
+    "supports_function_calling": true
+  }
+}
