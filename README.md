@@ -7,7 +7,7 @@
 - **LLM 驱动**：使用 SiliconFlow API（DeepSeek）进行智能推理
 - **多数据源**：支持加密货币（Binance）、美股（Twelve Data）、外汇（Frankfurter）
 - **ReAct 框架**：Thought → Action → Observation → Final Answer
-- **RAG 增强**：内置金融知识检索
+- **RAG 增强**：基于 ChromaDB + sentence-transformers 的向量检索
 - **多轮对话**：支持上下文记忆
 - **对比分析**：支持多资产对比
 
@@ -74,8 +74,10 @@ finagent/
 │   ├── frankfurter_tool.py  # Frankfurter 外汇
 │   └── analysis_tool.py    # 金融分析工具
 ├── rag/                # RAG 模块
-│   ├── knowledge.txt   # 金融知识库
-│   └── retriever.py    # 知识检索
+│   ├── knowledge.txt   # 金融知识库（源数据）
+│   ├── vector_store.py # 向量数据库（ChromaDB）
+│   ├── retriever.py    # 检索器（优先向量，降级关键词）
+│   └── vector_db/      # ChromaDB 自动生成（无需手动修改）
 ├── prompts/            # Prompt 模板
 ├── config.py           # 配置加载器
 ├── llm_client.py       # LLM API 客户端
@@ -89,6 +91,37 @@ finagent/
 | 加密货币 | Binance | BTCUSDT, ETHUSDT, SOLUSDT |
 | 美股 | Twelve Data | AAPL, TSLA, MSFT |
 | 外汇 | Frankfurter | USD, EUR, CNY, JPY |
+
+## RAG 知识检索
+
+FinAgent 使用 RAG (Retrieval-Augmented Generation) 增强 LLM 回答专业性：
+
+```
+用户问题 → 向量检索 → 知识库 → LLM 基于知识回答
+```
+
+### 工作原理
+
+1. **知识库**：`knowledge.txt` 包含金融概念、公式、指标定义
+2. **向量化**：使用 `sentence-transformers` 将文本转为 768 维向量
+3. **存储**：ChromaDB 持久化存储向量索引
+4. **检索**：语义相似度搜索，返回 top_k 相关知识片段
+5. **生成**：LLM 基于检索结果给出专业回答
+
+### 初始化 RAG
+
+```bash
+# 首次运行需要初始化向量数据库
+python -m rag.vector_store
+```
+
+### 配置 HuggingFace 镜像（国内用户）
+
+```bash
+# 已在 vector_store.py 中自动设置
+# 如果下载失败，手动设置：
+set HF_ENDPOINT=https://hf-mirror.com
+```
 
 ## 分析指标
 

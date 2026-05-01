@@ -43,6 +43,9 @@ config.json
 data/
 logs/
 
+# RAG vector database (auto-generated)
+rag/vector_db/
+
 # OS
 .DS_Store
 Thumbs.db
