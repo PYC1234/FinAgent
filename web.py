@@ -73,7 +73,7 @@ def chat(message, history):
 
 
 # Gradio Chat Interface
-with gr.Blocks(title="FinAgent", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="FinAgent") as demo:
     gr.Markdown("""
     # 🤖 FinAgent - AI 金融分析助手
 
@@ -93,10 +93,6 @@ with gr.Blocks(title="FinAgent", theme=gr.themes.Soft()) as demo:
             "夏普比率是什么？",
             "比较一下ETH和特斯拉"
         ],
-        cache_examples=False,
-        retry_btn="🔄 重新生成",
-        undo_btn="↩️ 撤销",
-        clear_btn="🗑️ 清除对话",
     )
 
     gr.Markdown("""
@@ -115,5 +111,6 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=7860,
         share=False,
-        show_error=True
+        show_error=True,
+        theme=gr.themes.Soft()
     )
