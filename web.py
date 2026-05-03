@@ -94,7 +94,7 @@ def chat(message, history):
 
 
 # Gradio UI
-with gr.Blocks(title="FinAgent", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="FinAgent") as demo:
     gr.Markdown("""
     # 🤖 FinAgent - AI 金融分析助手
 
@@ -106,7 +106,6 @@ with gr.Blocks(title="FinAgent", theme=gr.themes.Soft()) as demo:
             chatbot = gr.Chatbot(
                 label="对话",
                 height=500,
-                show_copy_button=True,
                 type="messages"
             )
             with gr.Row():
@@ -191,5 +190,6 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=7860,
         share=False,
-        show_error=True
+        show_error=True,
+        theme=gr.themes.Soft()
     )
