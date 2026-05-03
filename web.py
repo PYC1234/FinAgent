@@ -1,5 +1,5 @@
 """
-FinAgent Web UI - Gradio Chat Interface
+FinAgent Web UI - 实时显示思考过程
 """
 import sys
 import os
@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import gradio as gr
 import json
+import time
 from agent.agent import FinAgent
 from llm_client import LLMClient
 from config import get_llm_config
@@ -16,8 +17,6 @@ def create_agent():
     """初始化 Agent"""
     client = LLMClient()
     agent = FinAgent(client)
-
-    # 设置 Twelve Data API Key
     try:
         with open("config.json", "r") as f:
             cfg = json.load(f)
@@ -26,11 +25,9 @@ def create_agent():
                 agent.set_twelve_data_api_key(twelve_key)
     except Exception:
         pass
-
     return agent
 
 
-# 全局 Agent 实例
 agent = None
 
 
@@ -42,75 +39,157 @@ def init_agent():
 
 
 def chat(message, history):
-    """Gradio 对话回调"""
+    """带实时思考展示的对话"""
     agent = init_agent()
 
-    # 调用 Agent
-    result = agent.run(message)
+    # 清空之前的思考
+    thinking_display = ""
 
-    # 返回最终回答
+    # 定义回调函数捕获思考过程
+    steps_log = []
+    original_execute = agent._execute_tool
+
+    def wrapped_execute(name, arguments):
+        step_start = time.time()
+        result = original_execute(name, arguments)
+        elapsed = time.time() - step_start
+        steps_log.append({
+            "tool": name,
+            "args": arguments,
+            "time": f"{elapsed:.1f}s",
+            "result_preview": str(result)[:100]
+        })
+        return result
+
+    agent._execute_tool = wrapped_execute
+
+    # 运行 Agent
+    result = agent.run(message, max_steps=3)
+
+    # 恢复原函数
+    agent._execute_tool = original_execute
+
+    # 构建思考过程展示
+    thinking_parts = []
+    for i, step in enumerate(steps_log, 1):
+        thinking_parts.append(
+            f"🔧 **Step {i}**: 调用 `{step['tool']}` ({step['time']})\n"
+            f"   参数: `{json.dumps(step['args'], ensure_ascii=False)}`\n"
+            f"   结果: `{step['result_preview']}...`"
+        )
+
+    if thinking_parts:
+        thinking_display = "### 💭 思考过程\n\n" + "\n\n".join(thinking_parts)
+
+    # 获取最终回答
     answer = result.get("final_answer", "处理失败")
 
-    # 同时返回分析过程作为思考展示
-    steps = result.get("steps", [])
-    thinking = ""
-    if steps:
-        thinking_lines = []
-        for i, s in enumerate(steps, 1):
-            thought = s.get("thought", "")
-            if thought:
-                thinking_lines.append(f"Step {i}: {thought[:100]}")
-        if thinking_lines:
-            thinking = "\n".join(thinking_lines)
-
-    # 在回答前附加思考过程
-    if thinking:
-        full_answer = f"💭 **思考过程**:\n{thinking}\n\n---\n\n{answer}"
+    # 组合最终输出
+    if thinking_display:
+        full_output = f"{thinking_display}\n\n---\n\n### 📝 最终回答\n\n{answer}"
     else:
-        full_answer = answer
+        full_output = answer
 
-    return full_answer
+    return full_output
 
 
-# Gradio Chat Interface
-with gr.Blocks(title="FinAgent") as demo:
+# Gradio UI
+with gr.Blocks(title="FinAgent", theme=gr.themes.Soft()) as demo:
     gr.Markdown("""
     # 🤖 FinAgent - AI 金融分析助手
 
-    **支持**: 加密货币 | 美股 | 外汇 | 金融知识问答
-
-    > 输入你的问题，Agent 会自动调用工具并分析
+    **数据源**: 加密货币(Binance) | 美股(Twelve Data) | 外汇(Frankfurter)
     """)
 
-    chatbot = gr.ChatInterface(
-        fn=chat,
-        title="",
-        description="",
-        examples=[
-            "BTC现在价格多少？",
-            "苹果最近走势如何？",
-            "100美元等于多少人民币？",
-            "夏普比率是什么？",
-            "比较一下ETH和特斯拉"
-        ],
+    with gr.Row():
+        with gr.Column(scale=3):
+            chatbot = gr.Chatbot(
+                label="对话",
+                height=500,
+                show_copy_button=True,
+                type="messages"
+            )
+            with gr.Row():
+                msg = gr.Textbox(
+                    label="输入问题",
+                    placeholder="输入你的金融问题...",
+                    scale=4,
+                    container=False
+                )
+                submit = gr.Button("发送", variant="primary", scale=1)
+
+        with gr.Column(scale=1):
+            gr.Markdown("### 📊 快捷问题")
+            example_btns = [
+                gr.Button("BTC价格", size="sm"),
+                gr.Button("苹果股票", size="sm"),
+                gr.Button("汇率查询", size="sm"),
+                gr.Button("夏普比率", size="sm"),
+            ]
+
+    # 绑定事件
+    def user_input(message, history):
+        """用户输入"""
+        return "", history + [{"role": "user", "content": message}]
+
+    def bot_response(history):
+        """机器人回复"""
+        message = history[-1]["content"]
+        response = chat(message, history[:-1])
+        history.append({"role": "assistant", "content": response})
+        return history
+
+    def example_click(example_text, history):
+        """示例问题点击"""
+        history.append({"role": "user", "content": example_text})
+        response = chat(example_text, history[:-1])
+        history.append({"role": "assistant", "content": response})
+        return history
+
+    # 提交
+    msg.submit(
+        user_input,
+        [msg, chatbot],
+        [msg, chatbot]
+    ).then(
+        bot_response,
+        [chatbot],
+        [chatbot]
     )
+
+    submit.click(
+        user_input,
+        [msg, chatbot],
+        [msg, chatbot]
+    ).then(
+        bot_response,
+        [chatbot],
+        [chatbot]
+    )
+
+    # 示例按钮
+    for btn in example_btns:
+        btn.click(
+            example_click,
+            [btn, chatbot],
+            [chatbot]
+        )
 
     gr.Markdown("""
     ---
-    **数据源**: Binance(加密货币) | Twelve Data(美股) | Frankfurter(外汇)
-    **技术栈**: LLM驱动 + ReAct架构 + RAG知识检索
+    **数据源**: Binance | Twelve Data | Frankfurter
+    **技术栈**: LLM + ReAct + RAG | GitHub: [FinAgent](https://github.com/PYC1234/FinAgent)
     """)
 
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("启动 FinAgent Web UI...")
+    print("FinAgent Web UI")
     print("访问 http://localhost:7860")
     print("=" * 50)
     demo.launch(
         server_name="0.0.0.0",
         server_port=7860,
         share=False,
-        show_error=True,
-        theme=gr.themes.Soft()
+        show_error=True
     )
