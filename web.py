@@ -106,7 +106,7 @@ with gr.Blocks(title="FinAgent") as demo:
             chatbot = gr.Chatbot(
                 label="对话",
                 height=500,
-                type="messages"
+                buttons=["copy"]
             )
             with gr.Row():
                 msg = gr.Textbox(
