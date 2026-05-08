@@ -34,6 +34,7 @@ class FinAgent:
 
         # 工具注册
         self.tools = {
+            # 加密货币 (Binance)
             "get_crypto_price": self.crypto_tool.get_price,
             "get_crypto_24h": self.crypto_tool.get_24h_stats,
             "get_crypto_klines": self.crypto_tool.get_klines,
@@ -52,8 +53,9 @@ class FinAgent:
             "get_twelve_data_earnings": self.twelve_data_tool.get_earnings,
             "get_twelve_data_profile": self.twelve_data_tool.get_stock_profile,
             # 分析工具
-            "analyze_summary": self._wrap_analyze_summary,
-            "analyze_compare": self._wrap_analyze_compare,
+            "analyze_summary": self._analyze_summary,
+            "analyze_compare": self._analyze_compare,
+            # 知识库
             "search_knowledge": self._search_knowledge,
         }
 
@@ -289,7 +291,7 @@ class FinAgent:
         """设置 Twelve Data API Key"""
         self.twelve_data_tool.set_api_key(api_key)
 
-    def _wrap_analyze_summary(self, **kwargs) -> Dict:
+    def _analyze_summary(self, **kwargs) -> Dict:
         prices_data = kwargs.get("prices_data", "[]")
         name = kwargs.get("name", "Asset")
         try:
@@ -300,7 +302,7 @@ class FinAgent:
         except Exception as e:
             return {"error": str(e)}
 
-    def _wrap_analyze_compare(self, **kwargs) -> Dict:
+    def _analyze_compare(self, **kwargs) -> Dict:
         price_dict = kwargs.get("price_dict", "{}")
         try:
             if isinstance(price_dict, str):
