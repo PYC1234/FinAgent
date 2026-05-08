@@ -485,29 +485,8 @@ class FinAgent:
         return self._format_response(response)
 
     def _format_response(self, response: Dict) -> Dict:
-        lines = []
-        lines.append("=" * 60)
-        lines.append("📊 FinAgent 金融分析报告")
-        lines.append("=" * 60)
-        lines.append(f"\n问题: {response['query']}")
-
-        if response["steps"]:
-            lines.append("\n📋 分析过程:")
-            for i, s in enumerate(response["steps"], 1):
-                thought = s.get("thought", "")
-                if thought:
-                    lines.append(f"  Step {i}: 💭 {thought[:80]}...")
-                lines.append(f"        🎯 工具: {s['tool']}")
-                lines.append(f"        📥 结果: {str(s['result'])[:100]}")
-
-        if response["final_answer"]:
-            lines.append("\n" + "-" * 40)
-            lines.append("📝 最终结论:")
-            lines.append("-" * 40)
-            lines.append(str(response["final_answer"]))
-
-        lines.append("\n" + "=" * 60)
-        response["final_answer"] = "\n".join(lines)
+        """格式化响应，直接返回 LLM 的回答"""
+        # 直接返回 LLM 的原始回答，不添加额外格式
         return response
 
 

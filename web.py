@@ -12,6 +12,23 @@ from agent.agent import FinAgent
 from llm_client import LLMClient
 from config import get_llm_config
 
+# 自定义 CSS
+CUSTOM_CSS = """
+.gradio-container {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif !important;
+}
+.message {
+    font-size: 14px !important;
+}
+.thinking {
+    background-color: #f0f7ff;
+    border-left: 3px solid #3b82f6;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+}
+"""
+
 
 def create_agent():
     """初始化 Agent"""
@@ -42,9 +59,6 @@ def chat(message, history):
     """带实时思考展示的对话"""
     agent = init_agent()
 
-    # 清空之前的思考
-    thinking_display = ""
-
     # 定义回调函数捕获思考过程
     steps_log = []
     original_execute = agent._execute_tool
@@ -57,7 +71,7 @@ def chat(message, history):
             "tool": name,
             "args": arguments,
             "time": f"{elapsed:.1f}s",
-            "result_preview": str(result)[:100]
+            "result_preview": str(result)[:80]
         })
         return result
 
@@ -69,32 +83,21 @@ def chat(message, history):
     # 恢复原函数
     agent._execute_tool = original_execute
 
-    # 构建思考过程展示
-    thinking_parts = []
-    for i, step in enumerate(steps_log, 1):
-        thinking_parts.append(
-            f"🔧 **Step {i}**: 调用 `{step['tool']}` ({step['time']})\n"
-            f"   参数: `{json.dumps(step['args'], ensure_ascii=False)}`\n"
-            f"   结果: `{step['result_preview']}...`"
-        )
-
-    if thinking_parts:
-        thinking_display = "### 💭 思考过程\n\n" + "\n\n".join(thinking_parts)
-
     # 获取最终回答
     answer = result.get("final_answer", "处理失败")
 
-    # 组合最终输出
-    if thinking_display:
-        full_output = f"{thinking_display}\n\n---\n\n### 📝 最终回答\n\n{answer}"
-    else:
-        full_output = answer
+    # 如果有工具调用，添加简洁的工具使用说明
+    if steps_log:
+        tool_summary = []
+        for step in steps_log:
+            tool_summary.append(f"📌 使用工具: `{step['tool']}` ({step['time']})")
+        answer = "\n".join(tool_summary) + "\n\n" + answer
 
-    return full_output
+    return answer
 
 
 # Gradio UI
-with gr.Blocks(title="FinAgent") as demo:
+with gr.Blocks(title="FinAgent", css=CUSTOM_CSS) as demo:
     gr.Markdown("""
     # 🤖 FinAgent - AI 金融分析助手
 
