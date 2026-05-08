@@ -36,13 +36,14 @@ def setup_llm():
         print("-" * 50)
         print("""
 {
-  "llm_provider": "groq",
+  "llm_provider": "siliconflow",
   "llm": {
     "api_key": "你的API Key",
-    "base_url": "https://api.groq.com/openai/v1",
-    "model": "llama-3.1-8b-instant",
+    "base_url": "https://api.siliconflow.cn/v1",
+    "model": "deepseek-ai/DeepSeek-V3",
     "supports_function_calling": true
-  }
+  },
+  "twelve_data_api_key": "你的Twelve Data Key"
 }
 """)
         print("-" * 50)
